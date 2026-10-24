@@ -1,0 +1,45 @@
+# SPDX-FileCopyrightText: LXCat team
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+name: Check the app image
+
+# The images are only built when a release is published. This builds the app
+# image for the changes that can break it, and checks that the native converter
+# is in it, as the release does before it publishes the image.
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - app/Containerfile
+      - app/next.config.js
+      - app/src/shared/native-converter.ts
+      - packages/converter/**
+      - bun.lock
+      - .github/scripts/**
+      - .github/workflows/check-image.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-app-image:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Build the Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: app/Containerfile
+          load: true
+          tags: lxcat-app:check
+
+      - name: Check that the native converter is in the image
+        run: bash .github/scripts/check-image.sh lxcat-app:check

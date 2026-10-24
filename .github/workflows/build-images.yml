@@ -62,6 +62,19 @@ jobs:
            username: ${{ github.actor }}
            password: ${{ secrets.GITHUB_TOKEN }}
 
+       # Build the image first and check it, such that a broken image is never
+       # published. The build below reuses the layers of this build.
+       - name: Build the Docker image to check it
+         uses: docker/build-push-action@v7
+         with:
+           context: .
+           file: app/Containerfile
+           load: true
+           tags: lxcat-app:check
+
+       - name: Check that the native converter is in the image
+         run: bash .github/scripts/check-image.sh lxcat-app:check
+
        - name: Build and push Docker image
          id: push
          uses: docker/build-push-action@v7
